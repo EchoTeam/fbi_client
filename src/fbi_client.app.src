@@ -1,0 +1,29 @@
+%% -*- erlang -*-
+
+{application, fbi_client, [
+    {description, "FBI client app"},
+    {vsn, "0.0.1"},
+    {registered, []},
+    {mod, {fbi_client_app, []}},
+    {applications, [
+        %echo_json,
+        lager,
+        fbi_common
+    ]},
+    {env, [
+        {common, [
+            {rm_views, [
+                {client_proc, fbi_client_views},
+                {client_tab, fbi_client_flagmap_views},
+                {client_stats_proc, fbi_client_stats_views},
+                {client_stats_tab, fbi_client_stats_flagmap_views}
+            ]},
+            {rm_api, [
+                {client_proc, fbi_client_api},
+                {client_tab, fbi_client_flagmap_api},
+                {client_stats_proc, fbi_client_stats_api},
+                {client_stats_tab, fbi_client_stats_flagmap_api}
+            ]}
+        ]}
+    ]}
+]}.
