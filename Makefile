@@ -1,8 +1,11 @@
+REBAR= `which ./rebar || rebar`
+
 all:
-	./rebar compile
+	$(REBAR) compile
 
 clean:
-	./rebar clean
+	$(REBAR) clean
+	rm -fr .eunit
 
 test:
-	./rebar eunit skip_deps=true
+	$(REBAR) eunit skip_deps=true
