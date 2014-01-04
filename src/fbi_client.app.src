@@ -11,18 +11,14 @@
         fbi_common
     ]},
     {env, [
-        {common, [
-            {rm_views, [
-                {client_proc, fbi_client_views},
-                {client_tab, fbi_client_flagmap_views},
-                {client_stats_proc, fbi_client_stats_views},
-                {client_stats_tab, fbi_client_stats_flagmap_views}
-            ]},
-            {rm_api, [
-                {client_proc, fbi_client_api},
-                {client_tab, fbi_client_flagmap_api},
-                {client_stats_proc, fbi_client_stats_api},
-                {client_stats_tab, fbi_client_stats_flagmap_api}
+        {realms, [
+            {rm_default, [
+                %% common section
+                {realm_short_name, default},
+                %% special section
+                {server_host, "localhost"},
+                {server_node, local},
+                {server_port, 1811}
             ]}
         ]}
     ]}

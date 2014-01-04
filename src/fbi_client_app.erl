@@ -17,17 +17,21 @@ stop(_State) ->
     ok.
 
 load_config() ->
-    {ok, CommonSpec} = application:get_env(fbi_client, common),
-    {ok, SpecialSpec} = application:get_env(fbi_client, special),
-
-    Realms = [R || {R, _} <- CommonSpec],
-    RealmsS = [R || {R, _} <- SpecialSpec],
-    true = lists:sort(Realms) == lists:sort(RealmsS),
-    RealmsSpec = [{R, lists:concat([proplists:get_value(R, S) || S <- [CommonSpec, SpecialSpec]])} || R <- Realms],
+    {ok, InitialRealmsSpec} = application:get_env(fbi_client, realms),
+    RealmsSpec = extend_realms_spec(InitialRealmsSpec),
+    Realms = [R || {R, _} <- RealmsSpec],
 
     Get = fun(Realm, Key) ->
         RS = proplists:get_value(Realm, RealmsSpec, []),
         proplists:get_value(Key, RS)
+    end,
+    GetNode = fun(Realm) ->
+        case Get(Realm, server_node) of
+            local ->
+                node();
+            Value ->
+                Value
+        end
     end,
     W = fun(L) ->
         lists:zip(L, lists:duplicate(length(L) - 1, ";") ++ ["."])
@@ -44,7 +48,31 @@ load_config() ->
             [["client_tab(", IO(R), ") -> ", IO(Get(R, client_tab)), D] || {R, D} <- W(Realms)],
             [["client_stats_proc(", IO(R), ") -> ", IO(Get(R, client_stats_proc)), D] || {R, D} <- W(Realms)],
             [["client_stats_tab(", IO(R), ") -> ", IO(Get(R, client_stats_tab)), D] || {R, D} <- W(Realms)],
-            [["server_node(", IO(R), ") -> ", IO(Get(R, server_node)), D] || {R, D} <- W(Realms)],
+            [["server_node(", IO(R), ") -> ", IO(GetNode(R)), D] || {R, D} <- W(Realms)],
             [["server_hostport(", IO(R), ") -> {", IO(Get(R, server_host)), ",", IO(Get(R, server_port)), "}", D] || {R, D} <- W(Realms)]
     ],
     mod_gen:go(ModSpec).
+
+extend_realms_spec(RealmsSpec) ->
+    %% These options will be added to a realm spec (for each realms in the spec)
+    %% These options will look in the spec as {option_name, prefix_<realm_short_name>}
+    OptionsForExtend = [
+        {client_proc, fbi_client_},
+        {client_tab, fbi_client_flagmap_},
+        {client_stats_proc, fbi_client_stats_},
+        {client_stats_tab, fbi_client_stats_flagmap_}
+    ],
+    lists:map(fun(R) -> extend_realm_spec(R, OptionsForExtend) end, RealmsSpec).
+          
+extend_realm_spec({R, Spec}, OptionsForExtend) ->
+    ShortName = proplists:get_value(realm_short_name, Spec),
+    ConcatAtoms = fun(A1, A2) ->
+        list_to_atom(atom_to_list(A1) ++ atom_to_list(A2))
+    end,
+    GetOption = fun({OptionName, Prefix}) ->
+                     {OptionName, ConcatAtoms(Prefix, ShortName)}
+    end,
+    AdditionalOptions = lists:map(GetOption, OptionsForExtend),
+    {R, Spec ++ AdditionalOptions}.
+
+
