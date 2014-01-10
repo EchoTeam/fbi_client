@@ -1,8 +1,13 @@
-REBAR= `which ./rebar || rebar`
+REBAR := $(shell which ./rebar || which rebar)
 
-.PHONY: all clean test-unit test-ct check
+.PHONY: all get-deps compile clean test-unit test-ct check
 
-all:
+all: get-deps compile
+
+get-deps:
+	$(REBAR) get-deps
+
+compile:
 	$(REBAR) compile
 
 clean:
