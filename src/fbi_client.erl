@@ -8,7 +8,11 @@
     % use for tests only
     add_flag/2,
     delete_flag/2,
-    clear_cache/1
+    clear_cache/1,
+
+    % temp
+    add_event_handler/2,
+    delete_event_handler/2
 ]).
 
 -behavior(gen_server).
@@ -41,7 +45,13 @@ delete_flag(Realm, Flag) ->
 clear_cache(Realm) ->
     fbi_sdb_cache:clear(fbi_ccfg:client_tab(Realm)).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+add_event_handler(Handler, Args) ->
+    gen_event:add_sup_handler(fbi_client_events, Handler, Args). 
+
+delete_event_handler(Handler, Args) ->
+    gen_event:delete_handler(fbi_client_events, Handler, Args).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% gen_server callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -67,11 +77,13 @@ handle_cast(_Request, State) ->
 
 handle_info({tcp, Socket, Data}, #state{fbi_server = Socket, realm = Realm} = State) ->
     NewState = case data_of_blob(Data) of
-        {ok, {flagged, Flag, _}} ->
+        {ok, {flagged, Flag, Label}} ->
             fbi_sdb_cache:add_flag(fbi_ccfg:client_tab(Realm), Flag),
+            rise_flagged_event(Realm, Flag, Label),
             State;
-        {ok, {unflagged, Flag, _}} ->
+        {ok, {unflagged, Flag, Label}} ->
             fbi_sdb_cache:delete_flag(fbi_ccfg:client_tab(Realm), Flag),
+            rise_unflagged_event(Realm, Flag, Label),
             State;
         pong ->
             State#state{awaiting_pong = false};
@@ -128,4 +140,13 @@ data_of_blob([Action | Rest]) ->
                                 binary_to_term(base64:decode(Label))}};
         _ -> error
     end.
+
+rise_flagged_event(Realm, Flag, Label) ->
+    rise_fbi_event({flagged, Realm, Flag, Label}).
+
+rise_unflagged_event(Realm, Flag, Label) ->
+    rise_fbi_event({unflagged, Realm, Flag, Label}).
+
+rise_fbi_event(Event) ->
+    gen_event:notify(fbi_client_events, Event).
 
