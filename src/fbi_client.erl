@@ -77,13 +77,13 @@ handle_cast(_Request, State) ->
 
 handle_info({tcp, Socket, Data}, #state{fbi_server = Socket, realm = Realm} = State) ->
     NewState = case data_of_blob(Data) of
-        {ok, {flagged, Flag, Label}} ->
+        {ok, {flagged, Flag, _Label} = FlaggedEvent } ->
             fbi_sdb_cache:add_flag(fbi_ccfg:client_tab(Realm), Flag),
-            rise_flagged_event(Realm, Flag, Label),
+            rise_fbi_event(Realm, FlaggedEvent),
             State;
-        {ok, {unflagged, Flag, Label}} ->
+        {ok, {unflagged, Flag, _Label} = UnflaggedEvent } ->
             fbi_sdb_cache:delete_flag(fbi_ccfg:client_tab(Realm), Flag),
-            rise_unflagged_event(Realm, Flag, Label),
+            rise_fbi_event(Realm, UnflaggedEvent),
             State;
         pong ->
             State#state{awaiting_pong = false};
@@ -141,12 +141,6 @@ data_of_blob([Action | Rest]) ->
         _ -> error
     end.
 
-rise_flagged_event(Realm, Flag, Label) ->
-    rise_fbi_event({flagged, Realm, Flag, Label}).
-
-rise_unflagged_event(Realm, Flag, Label) ->
-    rise_fbi_event({unflagged, Realm, Flag, Label}).
-
-rise_fbi_event(Event) ->
-    gen_event:notify(fbi_client_events, Event).
+rise_fbi_event(Realm, Event) ->
+    gen_event:notify(fbi_client_events, {fbi_event, {Realm, Event}}).
 
