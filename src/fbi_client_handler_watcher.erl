@@ -83,7 +83,7 @@ install_handler(Handler, Args) ->
             lager:error("FBI client install events handler '~p' error: ~p~n", [Handler, Reason]),
             ReinstallByTimeout(),
             ok
-    catch 'exit':noproc ->
+    catch exit:noproc ->
         ReinstallByTimeout(),
         ok
     end.
