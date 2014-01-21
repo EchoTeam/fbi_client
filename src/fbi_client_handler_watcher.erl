@@ -58,10 +58,10 @@ handle_info({?HANDLER_MSG, Handler, Reason}, S=#state{handler=Handler, args=Args
 handle_info(install_handler, S=#state{handler=Handler, args=Args}) ->
     install_handler(Handler, Args),
     {noreply, S};
-handle_info(Msg, S) ->
+handle_info(_Msg, S) ->
     {noreply, S}.
 
-terminate(Reason, _S) ->
+terminate(_Reason, _S) ->
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
@@ -79,11 +79,11 @@ install_handler(Handler, Args) ->
     try fbi_client:add_event_handler(Handler, Args) of
         ok ->
             ok;
-        Error ->
+        {_Error, Reason} ->
+            lager:error("FBI client install events handler '~p' error: ~p~n", [Handler, Reason]),
             ReinstallByTimeout(),
             ok
-    catch _:Error ->
-        lager:error("Install fbi client events handler exception: ~p~n", [Error]),
+    catch exit:noproc ->
         ReinstallByTimeout(),
         ok
     end.

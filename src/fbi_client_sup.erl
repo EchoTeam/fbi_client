@@ -26,7 +26,7 @@ all_spec() ->
     specs_for_realms() ++ static_specs().
     
 specs_for_realms() ->
-    lists:concat([specs_for_realm(Realm) || Realm <- fbi_ccfg:enumerate()]).
+    lists:flatten([specs_for_realm(Realm) || Realm <- fbi_ccfg:enumerate()]).
     
 specs_for_realm(Realm) -> [
     { fbi_utils:atom_for_realm(fbi_client, Realm), { fbi_client, start_link, [Realm] },
@@ -37,6 +37,6 @@ specs_for_realm(Realm) -> [
     
 static_specs() -> [
     {fbi_client_events, {gen_event, start_link, [{local, fbi_client_events}]},
-        permanent, 1000, worker, dynamic}
+        permanent, 10000, worker, dynamic}
 ].
 
