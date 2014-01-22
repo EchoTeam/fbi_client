@@ -142,5 +142,9 @@ data_of_blob([Action | Rest]) ->
     end.
 
 rise_fbi_event(Realm, Event) ->
-    gen_event:notify(fbi_client_events, {fbi_event, {Realm, Event}}).
+    try
+        gen_event:notify(fbi_client_events, {fbi_event, {Realm, Event}})
+    catch error:badarg ->
+        lager:warning("FBI client gen event not started")
+    end.
 

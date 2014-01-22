@@ -2,7 +2,7 @@
 
 {application, fbi_client, [
     {description, "FBI client app"},
-    {vsn, "0.1.1"},
+    {vsn, "0.1.2"},
     {registered, []},
     {mod, {fbi_client_app, []}},
     {applications, [
